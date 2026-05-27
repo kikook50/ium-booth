@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>이음 스마트역</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;500;700&display=swap');
+        
+        * { box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; }
+        
+        body { background-color: #050b14; display: flex; justify-content: center; color: #e0f7fa; }
+        
+        .app-container { 
+            width: 100%; max-width: 420px; height: 100vh; 
+            background: linear-gradient(180deg, #0a1128 0%, #010308 100%);
+            position: relative; overflow: hidden; 
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); 
+            border-left: 1px solid rgba(0, 243, 255, 0.2);
+            border-right: 1px solid rgba(0, 243, 255, 0.2);
+        }
+        
+        .header { 
+            background: rgba(0, 243, 255, 0.05); 
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            color: #00f3ff; padding: 20px; text-align: center; 
+            font-size: 20px; font-weight: 700; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .screen { display: none; padding: 25px; height: calc(100vh - 65px); overflow-y: auto; animation: fadeIn 0.4s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        .menu-btn { 
+            display: flex; align-items: center; justify-content: space-between; 
+            width: 100%; padding: 20px; margin-bottom: 18px; 
+            background: rgba(0, 243, 255, 0.05); 
+            border: 1px solid rgba(0, 243, 255, 0.4); 
+            border-radius: 12px; font-size: 18px; font-weight: 500; 
+            color: #ffffff; cursor: pointer; transition: all 0.3s ease; 
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1) inset;
+        }
+        .menu-btn:hover { 
+            background: rgba(0, 243, 255, 0.15); 
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4); 
+            transform: translateY(-2px);
+        }
+        .menu-icon { font-size: 22px; filter: drop-shadow(0 0 5px #00f3ff); }
+        
+        .back-btn { 
+            display: inline-block; padding: 8px 16px; 
+            background: transparent; color: #00f3ff; 
+            border: 1px solid #00f3ff; border-radius: 20px; 
+            margin-bottom: 25px; font-size: 14px; cursor: pointer; 
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+
+        /* 플래시카드 (국문) */
+        .flashcard-container { perspective: 1000px; width: 100%; height: 180px; margin-bottom: 25px; cursor: pointer; }
+        .flashcard { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .card-face { 
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            border-radius: 15px; font-size: 26px; font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        .card-front { background: rgba(0, 243, 255, 0.1); color: #00f3ff; box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
+        .card-back { background: rgba(176, 38, 255, 0.1); color: #b026ff; border-color: rgba(176, 38, 255, 0.4); transform: rotateY(180deg); box-shadow: 0 0 20px rgba(176, 38, 255, 0.2); }
+        .tag { font-size: 12px; color: #aaa; margin-bottom: 10px; letter-spacing: 1px; }
+
+        /* 고도화된 심리 테스트 UI */
+        .quiz-box { text-align: center; margin-top: 10px; }
+        .progress-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        .progress-bar { width: 33%; height: 100%; background: linear-gradient(90deg, #00ff88, #00f3ff); transition: width 0.3s ease; }
+        .quiz-q { color: #ffffff; font-size: 16px; font-weight: 500; line-height: 1.5; margin-bottom: 25px; min-height: 50px; }
+        .quiz-btn { 
+            width: 100%; padding: 16px; margin: 10px 0; 
+            background: rgba(0, 255, 136, 0.03); color: #00ff88; 
+            border: 1px solid rgba(0, 255, 136, 0.3); 
+            border-radius: 12px; font-size: 15px; cursor: pointer; 
+            transition: 0.3s; text-align: left; padding-left: 20px;
+        }
+        .quiz-btn:hover { background: rgba(0, 255, 136, 0.15); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); transform: translateX(2px); }
+        .result-box { display: none; margin-top: 15px; padding: 22px; background: rgba(0, 255, 136, 0.08); border-radius: 14px; color: #ffffff; font-weight: 400; text-align: left; border: 1px solid rgba(0, 255, 136, 0.4); line-height: 1.6; }
+        .result-header { color: #00ff88; font-size: 18px; font-weight: 700; margin-bottom: 12px; border-bottom: 1px solid rgba(0,255,136,0.2); padding-bottom: 8px; text-align: center;}
+
+        /* 미래 여행지 카드 */
+        .travel-card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .travel-tag { display: inline-block; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; margin: 15px 15px 5px 15px; letter-spacing: 1px; }
+        .img-preview { width: calc(100% - 30px); margin: 0 15px; border-radius: 10px; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); }
+        .travel-title { font-size: 18px; font-weight: 700; color: #ffffff; padding: 10px 15px 5px 15px; }
+        .travel-desc { font-size: 13px; color: #8ab4f8; line-height: 1.5; padding: 0 15px 15px 15px; }
+        
+        /* 헬스 스캔 */
+        .scan-box { text-align: center; margin-top: 40px; }
+        .scan-btn { 
+            width: 160px; height: 160px; border-radius: 50%; background: transparent; color: #00f3ff; 
+            font-size: 20px; font-weight: 700; border: 2px solid #00f3ff; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: 0.3s;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2) inset, 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+        .scan-btn.scanning { animation: pulse 1.5s infinite; color: #b026ff; border-color: #b026ff; }
+        @keyframes pulse { 
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(176, 38, 255, 0.7); } 
+            70% { transform: scale(1.05); box-shadow: 0 0 0 30px rgba(176, 38, 255, 0); } 
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(176, 38, 255, 0); } 
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">이음 스마트역</div>
+
+    <!-- 메인 홈 화면 -->
+    <div id="screen-home" class="screen active">
+        <div style="text-align: center; color: #8ab4f8; margin-bottom: 30px; line-height: 1.6; font-size: 15px;">
+            <span style="color:#00f3ff;">[SYSTEM]</span> 동북아 스마트 스테이션 접속 완료.<br>AI 안내 서비스를 시작합니다.
+        </div>
+        
+        <button class="menu-btn" onclick="nav('screen-lang')">
+            <span>AI 언어 번역</span> <span class="menu-icon">🌐</span>
+        </button>
+        <button class="menu-btn" onclick="nav('screen-psycho')">
+            <span>마음 심리 검사</span> <span class="menu-icon">🧬</span>
+        </button>
+        <button class="menu-btn" onclick="nav('screen-culture')">
+            <span>실감형 프리뷰</span> <span class="menu-icon">🏙️</span>
+        </button>
+        <button class="menu-btn" onclick="nav('screen-health')">
+            <span>스마트 헬스</span> <span class="menu-icon">🩺</span>
+        </button>
+    </div>
+
+    <!-- 1. 국문: 언어 번역 화면 -->
+    <div id="screen-lang" class="screen">
+        <button class="back-btn" onclick="nav('screen-home')">◀ SYSTEM RETURN</button>
+        <h3 style="text-align:center; color:#00f3ff; margin-bottom: 20px;">언어 데이터 동기화</h3>
+        
+        <div class="flashcard-container" onclick="flipCard(this)">
+            <div class="flashcard">
+                <div class="card-face card-front"><div class="tag">KR_STANDARD</div>도시락</div>
+                <div class="card-face card-back"><div class="tag">NK_DIALECT</div>곽밥</div>
+            </div>
+        </div>
+        <div class="flashcard-container" onclick="flipCard(this)">
+            <div class="flashcard">
+                <div class="card-face card-front"><div class="tag">KR_STANDARD</div>아이스크림</div>
+                <div class="card-face card-back"><div class="tag">NK_DIALECT</div>얼음보숭이</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 심리: 마음 검사 화면 (★3단계 인터랙티브 고도화 버전) -->
+    <div id="screen-psycho" class="screen">
+        <button class="back-btn" onclick="resetPsycho(); nav('screen-home');">◀ SYSTEM RETURN</button>
+        <div class="quiz-box">
+            <h3 id="psycho-title" style="color:#00ff88; margin-bottom: 10px;">AI 다학제 심리 궤적 분석</h3>
+            
+            <div id="quiz-contents">
+                <div class="progress-bar-container">
+                    <div id="psycho-progress" class="progress-bar"></div>
+                </div>
+                <p id="quiz-question" class="quiz-q"></p>
+                <button id="ans1" class="quiz-btn" onclick="nextQuestion(1)"></button>
+                <button id="ans2" class="quiz-btn" onclick="nextQuestion(2)"></button>
+            </div>
+
+            <div id="psycho-result" class="result-box"></div>
+            <button id="retry-btn" class="quiz-btn" style="display:none; text-align:center; padding-left:0; border-color:#00f3ff; color:#00f3ff; margin-top:15px;" onclick="resetPsycho()">재검사 시행</button>
+        </div>
+    </div>
+
+    <!-- 3. 문콘: VR 프리뷰 화면 -->
+    <div id="screen-culture" class="screen">
+        <button class="back-btn" onclick="nav('screen-home')">◀ SYSTEM RETURN</button>
+        <h3 style="text-align:center; color:#00f3ff; margin-bottom: 5px;">미래 남북 여행지 프리뷰</h3>
+        <p style="text-align:center; color:#8ab4f8; font-size:13px; margin-bottom:20px;">2035년 안정기 한반도 대동기적 랜드마크 실황</p>
+        
+        <div class="travel-card">
+            <div class="travel-tag" style="background: #ff0055; color: white;">NORTH KOREA</div>
+            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80" class="img-preview" alt="미래 평양">
+            <div class="travel-title">평양 대동강 스마트 파크</div>
+            <div class="travel-desc">유라시아 철도와 직결되는 초고속 자기부상 전철망, 친환경 수변 랜드마크가 융합된 완전 개방형 미래 도시</div>
+        </div>
+
+        <div class="travel-card">
+            <div class="travel-tag" style="background: #00ff88; color: #050b14;">SOUTH KOREA</div>
+            <img src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80" class="img-preview" alt="미래 제주">
+            <div class="travel-title">제주 AI 에코 아일랜드</div>
+            <div class="travel-desc">UAM(도심항공교통) 자율형 환승 허브와 완벽한 에코 그리드 시스템으로 재탄생한 지능형 글로벌 관광 거점</div>
+        </div>
+    </div>
+
+    <!-- 4. 의학: 헬스 스캔 화면 -->
+    <div id="screen-health" class="screen">
+        <button class="back-btn" onclick="nav('screen-home')">◀ SYSTEM RETURN</button>
+        <div class="scan-box">
+            <h3 id="health-text" style="color:#00f3ff; margin-bottom:30px;">바이탈 센서를 터치하십시오</h3>
+            <div id="scan-btn" class="scan-btn" onclick="startScan()">SCAN</div>
+            <div id="health-result" class="result-box" style="margin-top: 40px; color:#b026ff; border-color:#b026ff; background:rgba(176, 38, 255, 0.1);"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 심리 진단 데이터 (다학제 융합 요소 반영)
+    const questions = [
+        {
+            q: "기차 플랫폼에 내려 2035년 이음 스마트역 로비에 진입했습니다. 당신의 시선이 가장 먼저 머무는 곳은?",
+            a1: "💡 AI가 실시간으로 남북 다이렉트 언어 통역을 수행하는 거대한 미디어 글래스",
+            a2: "🌿 은은한 무드 조명과 테라피 음향이 흘러나오는 다학제 심리 치유 라운지"
+        },
+        {
+            q: "이음역 환승 대기 시간 동안 가상 부스를 이용하려고 합니다. 어떤 체험 스타일을 선호하시나요?",
+            a1: "🏃 미래 한반도 랜드마크(평양·제주) 가상현실을 조작하며 역동적으로 둘러보는 스캔 체험",
+            a2: "📊 내 생체 바이탈 사인과 맥박을 체크해 건강 상태를 인공지능으로 정밀 검진받는 스캔 체험"
+        },
+        {
+            q: "스마트 스테이션 내부에서 사람들과 교류하고자 할 때, 당신의 본질적인 심리적 요구는 무엇인가요?",
+            a1: "🤝 개방된 소통 공간에서 다양한 문화와 융합 인프라를 적극적으로 탐색하고 싶다.",
+            a2: "🧘 복잡한 이동 동선에서 벗어나 내면의 안정감을 찾고 고요히 휴식하고 싶다."
+        }
+    ];
+
+    let currentStep = 0;
+    let scores = { exploration: 0, stability: 0 }; // 탐색파 vs 안정파 지표 점수
+
+    function nav(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        document.getElementById('health-result').style.display = 'none';
+        document.getElementById('scan-btn').innerText = 'SCAN';
+        document.getElementById('health-text').innerText = '바이탈 센서를 터치하십시오';
+        
+        if(screenId === 'screen-psycho') {
+            renderQuestion();
+        }
+    }
+
+    function flipCard(element) {
+        element.querySelector('.flashcard').classList.toggle('is-flipped');
+    }
+
+    // 심리검사 로직
+    function renderQuestion() {
+        document.getElementById('quiz-contents').style.display = 'block';
+        document.getElementById('psycho-result').style.display = 'none';
+        document.getElementById('retry-btn').style.display = 'none';
+        
+        const progress = document.getElementById('psycho-progress');
+        progress.style.width = ((currentStep + 1) / questions.length * 100) + '%';
+        
+        document.getElementById('quiz-question').innerText = `Q${currentStep + 1}. ${questions[currentStep].q}`;
+        document.getElementById('ans1').innerText = questions[currentStep].a1;
+        document.getElementById('ans2').innerText = questions[currentStep].a2;
+    }
+
+    function nextQuestion(answerNum) {
+        // 선택지에 따른 가중치 부여
+        if (currentStep === 0) {
+            if (answerNum === 1) scores.exploration += 2;
+            else scores.stability += 2;
+        } else if (currentStep === 1) {
+            if (answerNum === 1) scores.exploration += 1;
+            else scores.stability += 1;
+        } else if (currentStep === 2) {
+            if (answerNum === 1) scores.exploration += 2;
+            else scores.stability += 2;
+        }
+
+        currentStep++;
+
+        if (currentStep < questions.length) {
+            renderQuestion();
+        } else {
+            showFinalResult();
+        }
+    }
+
+    function showFinalResult() {
+        document.getElementById('quiz-contents').style.display = 'none';
+        const resBox = document.getElementById('psycho-result');
+        const retryBtn = document.getElementById('retry-btn');
+        
+        let title = "";
+        let desc = "";
+        
+        // 탐색 지표가 높은 경우
+        if (scores.exploration >= scores.stability) {
+            title = "🌌 [분석 결과] 융합형 미래 지식 탐색자 (Explorer)";
+            desc = "당신은 다학제적 가치와 새로운 기술 융합에 강한 호기심을 느끼는 개방적 성향입니다. 인문학적 소통과 첨단 인터랙션이 극대화된 이음 스마트역 내 <strong>[아고라 만남의 광장]</strong> 및 <strong>[실감형 프리뷰 존]</strong> 동선과 완벽히 매칭됩니다. 언어와 경계를 허무는 가상 인프라 속에서 최적의 파트너십 시너지를 발휘해 보세요.";
+        } else { // 안정 지표가 높은 경우
+            title = "🛡️ [분석 결과] 지능형 휴먼 웰니스 안착자 (Stabilizer)";
+            desc = "당신은 고도화된 첨단 도시 환경 속에서도 인간 중심의 심리적 안정과 신체적 리프레시를 중시하는 균형 잡힌 성향입니다. 기술의 압박을 줄이고 내면을 케어해 주는 스마트 스테이션 내 <strong>[마음 이음 센터]</strong> 및 <strong>[스마트 바이탈 헬스 존]</strong> 매칭을 제안합니다. 지능형 안전망 안에서 편안한 모빌리티 환승을 준비해 보세요.";
+        }
+        
+        resBox.innerHTML = `<div class="result-header">${title}</div>${desc}`;
+        resBox.style.display = 'block';
+        retryBtn.style.display = 'block';
+    }
+
+    function resetPsycho() {
+        currentStep = 0;
+        scores = { exploration: 0, stability: 0 };
+        renderQuestion();
+    }
+
+    // 헬스 스캔 로직
+    function startScan() {
+        const btn = document.getElementById('scan-btn');
+        const text = document.getElementById('health-text');
+        const res = document.getElementById('health-result');
+        
+        btn.classList.add('scanning');
+        btn.innerText = 'ANALYZING';
+        text.innerText = '의료 AI가 생체 데이터를 스캔 중입니다...';
+        res.style.display = 'none';
+
+        setTimeout(() => {
+            btn.classList.remove('scanning');
+            btn.innerText = 'COMPLETED';
+            text.innerText = '분석이 완료되었습니다.';
+            res.innerHTML = "[생체 데이터 정상 범위]<br><br>안전한 여행이 가능합니다.<br>쾌적한 환승을 위해 [지능형 자율주행 모빌리티]를 호출하시겠습니까?";
+            res.style.display = 'block';
+        }, 2500);
+    }
+</script>
+
+</body>
+</html>
